@@ -1,0 +1,9 @@
+Package: com.local.repokit
+Name: RepoKit
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: Local jailbreak repository manager with package CRUD, index building, and GitHub publishing.
+Maintainer: DaFei
+Author: DaFei
+Section: Utilities
+Depends: firmware (>= 15.0), dpkg, dpkg-dev, gzip, zstd, git, openssh-client

@@ -1,0 +1,54 @@
+#!/bin/sh
+set -e
+
+find_jbroot() {
+    if command -v jbroot >/dev/null 2>&1; then
+        jbroot / 2>/dev/null || true
+        return
+    fi
+    if [ -d /var/jb ]; then
+        printf '%s\n' /var/jb
+    fi
+}
+
+add_path_candidate() {
+    candidate="$1"
+    [ -n "$candidate" ] || return 0
+    case " $PATH_CANDIDATES " in
+        *" $candidate "*) return 0 ;;
+    esac
+    PATH_CANDIDATES="$PATH_CANDIDATES $candidate"
+}
+
+JBROOT="$(find_jbroot | sed -n '1p')"
+PATH_CANDIDATES=""
+
+add_path_candidate /Applications/RepoKit.app
+add_path_candidate /usr/bin
+if [ -d /var/jb ]; then
+    add_path_candidate /var/jb/Applications/RepoKit.app
+    add_path_candidate /var/jb/usr/bin
+fi
+if command -v jbroot >/dev/null 2>&1; then
+    add_path_candidate "$(jbroot /Applications/RepoKit.app 2>/dev/null || true)"
+    add_path_candidate "$(jbroot /usr/bin 2>/dev/null || true)"
+fi
+
+if [ -n "$JBROOT" ]; then
+    for dir in $PATH_CANDIDATES; do
+        if [ -d "$dir" ]; then
+            if [ -L "$dir/.jbroot" ] || [ ! -e "$dir/.jbroot" ]; then
+                ln -sfn "$JBROOT" "$dir/.jbroot" 2>/dev/null || true
+            fi
+        fi
+    done
+fi
+
+if command -v chown >/dev/null 2>&1; then
+    chown -R mobile:mobile /var/jb/var/mobile/RepoKit 2>/dev/null || chown -R mobile:mobile /var/mobile/RepoKit 2>/dev/null || true
+fi
+if command -v chmod >/dev/null 2>&1; then
+    chmod -R u+rwX,go+rX /var/jb/var/mobile/RepoKit 2>/dev/null || chmod -R u+rwX,go+rX /var/mobile/RepoKit 2>/dev/null || true
+fi
+
+exit 0
