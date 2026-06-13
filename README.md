@@ -1,47 +1,43 @@
 # RepoKit
 
-RepoKit is a *local* jailbreak repository manager that runs directly on your
-jailbroken iPhone. It ships a UIKit app and a companion command-line helper so
-you can create, import, edit, index and publish a Cydia/Sileo/Zebra repository
-*without* a Mac.
+English | [中文](README.md)
+
+RepoKit 是一个直接在越狱 iPhone 本机运行的越狱源管理工具。它包含一个 UIKit 图形界面 App 和一个配套的命令行辅助程序
+`repokit-helper`，可以**在没有 Mac 的情况下**创建、导入、编辑、索引并发布 Cydia / Sileo / Zebra 越狱源。
 
 ![RepoKit](screenshots/app-preview.png)
 
-## Features
+> 英文版请见 [README_EN.md](README_EN.md)。
 
-- Create a brand-new local repository with one tap
-- Import an existing repository folder
-- Import a single `.deb` file or rebuild a `.deb` from an already-installed
-  package via `dpkg`
-- Edit any `DEBIAN/control` field and the package icon from the app
-- Generate `Packages`, `Packages.gz`, `Packages.zst`, `Packages.bz2` and
-  `Packages.xz` with `dpkg-scanpackages`
-- Generate the `Release` file with MD5 / SHA256 checksums
-- Lint your repository for duplicate versions, missing fields, architecture
-  mismatches and orphan `.deb` files
-- Configure a GitHub remote / branch / SSH user and push straight to GitHub
-  Pages
-- Full Chinese and English localization
+## 功能
 
-## Requirements
+- 一键创建全新本地越狱源
+- 导入已有越狱源目录
+- 导入单个 `.deb` 文件，或直接从 `dpkg` 已安装记录重建 `.deb`
+- 在 App 内编辑任意 `DEBIAN/control` 字段和软件包图标
+- 使用 `dpkg-scanpackages` 生成 `Packages`、`Packages.gz`、`Packages.zst`、`Packages.bz2`、`Packages.xz`
+- 生成带 MD5 / SHA256 校验和的 `Release` 文件
+- 检查重复包版本、缺失字段、架构不匹配和孤立 `.deb` 文件
+- 配置 GitHub remote / 分支 / SSH 用户名，直接推送到 GitHub Pages
+- 完整中英文本地化
 
-- A jailbroken iPhone (iOS 15+, scheme: **rootless** or **roothide**)
-- Theos toolchain on your build machine
-- Runtime dependencies (pulled from the `control` file):
+## 系统要求
+
+- 越狱 iPhone（iOS 15+，scheme：**rootless** 或 **roothide**）
+- 构建机上安装 Theos 工具链
+- 运行时依赖（由 `control` 自动拉取）：
 
 ```
 dpkg, dpkg-dev, gzip, zstd, git, openssh-client
 ```
 
-Optional (if present RepoKit will also generate those indexes):
-`bzip2`, `xz`
+可选依赖（存在时额外生成对应压缩索引）：`bzip2`、`xz`
 
-## Building
+## 构建
 
-Clone the repo and point `THEOS` at your Theos installation. The top-level
-Makefile aggregates `repokit-helper` and `RepoKitApp`.
+克隆仓库并把 `THEOS` 指向你的 Theos 安装路径。顶层 Makefile 会聚合 `repokit-helper` 和 `RepoKitApp`。
 
-### rootless (default)
+### rootless（默认）
 
 ```sh
 export THEOS=/path/to/theos
@@ -57,66 +53,64 @@ make clean THEOS_PACKAGE_SCHEME=roothide
 make package THEOS_PACKAGE_SCHEME=roothide
 ```
 
-After the build you will find the `.deb` under `packages/`. Install it on
-device, then refresh the icon cache:
+构建完成后 `.deb` 位于 `packages/`，传到设备安装后刷新图标：
 
 ```sh
 uicache -a
 ```
 
-> App and helper are always built with `ARCHS=arm64`. The package
-> architecture differs only in the `.deb` metadata (`iphoneos-arm64` for
-> rootless, `iphoneos-arm64e` for roothide).
+> App 和 helper 始终以 `ARCHS=arm64` 编译，rootless / roothide 的区别仅体现在
+> `.deb` 包元数据（`iphoneos-arm64` vs `iphoneos-arm64e`）。
 
-## Project Layout
+## 项目结构
 
 ```
 RepoKit/
-├── Makefile                 # Theos aggregate entry
-├── control                  # Debian package metadata
-├── RepoKitApp/              # UIKit app
+├── Makefile                 # Theos 聚合构建入口
+├── control                  # Debian 包元数据
+├── RepoKitApp/              # UIKit 图形界面
 │   ├── Makefile
 │   ├── Info.plist
-│   ├── Sources/             # main.m, AppDelegate, UI, helper client
-│   └── Resources/           # Localizable.strings (en / zh-Hans)
-├── repokit-helper/          # /usr/bin/repokit-helper command-line tool
+│   ├── Sources/             # main.m、AppDelegate、UI、helper client
+│   └── Resources/           # Localizable.strings（en / zh-Hans）
+├── repokit-helper/          # /usr/bin/repokit-helper 命令行工具
 │   ├── Makefile
 │   └── Sources/main.m
-├── layout/DEBIAN/postinst   # Post-install script (chowns data dir, links .jbroot)
-├── screenshots/             # README screenshot
+├── layout/DEBIAN/postinst   # 安装后脚本（数据目录 chown、.jbroot 链接）
+├── screenshots/             # README 截图
 └── .gitignore
 ```
 
-Generated folders (do **not** commit them):
+生成目录（**不要提交**）：
 
 ```
-.theos/      # Theos caches
-packages/    # .deb build output
-repos/       # Runtime repository data (lives on device at /var/mobile/RepoKit)
-logs/        # Runtime logs
-repo-trash/  # Soft-deleted repository data
+.theos/      # Theos 缓存
+packages/    # .deb 构建产物
+repos/       # 运行时源数据（设备端路径 /var/mobile/RepoKit）
+logs/        # 运行时日志
+repo-trash/  # 软删除的源数据回收目录
 ```
 
-## How It Works
+## 工作原理
 
-1. You create, import or pick a repository from the app.
-2. The app shells out to `/usr/bin/repokit-helper`.
-3. `repokit-helper` reads/writes `repo.json`, copies `.deb`s into
-   `public/debs/`, runs `dpkg-scanpackages`, writes the index files and
-   generates `Release`.
-4. When you hit *Push GitHub*, the helper runs `git init`, `git add`,
-   `git commit` and `git push` from inside `public/` using
-   `/var/mobile/.ssh/id_ed25519`.
-5. Enable GitHub Pages on `main` → `/root`, then add
-   `https://<user>.github.io/<repo>/` in Sileo / Zebra.
+1. 在 App 中创建、导入或选择一个越狱源。
+2. App 通过 `posix_spawn` 调用 `/usr/bin/repokit-helper`。
+3. `repokit-helper` 读写 `repo.json`，把 `.deb` 复制到 `public/debs/`，
+   运行 `dpkg-scanpackages` 生成索引，并写入 `Release`。
+4. 点“推送 GitHub”时，helper 在 `public/` 目录执行
+   `git init` / `git add` / `git commit` / `git push`，使用
+   `/var/mobile/.ssh/id_ed25519` SSH 密钥。
+5. 在 GitHub 仓库 Settings → Pages 将 `main` 分支 `/root` 目录开启，
+   然后把 `https://<user>.github.io/<repo>/` 填进 Sileo / Zebra。
 
-RepoKit exposes *logical paths* only (`/var/mobile/RepoKit`,
-`/usr/bin/repokit-helper`). Internally every path goes through
-`jbroot(...)`, so you never need to type a `/var/jb` or preboot path.
+RepoKit 始终向用户暴露**逻辑路径**（`/var/mobile/RepoKit`、
+`/usr/bin/repokit-helper`），内部通过 `jbroot(...)` 自动适配 rootless 与
+roothide 的真实 preboot 路径，用户无需（也不应该）手动填写 `/var/jb` 或
+`/private/preboot` 实际路径。
 
-## Helper CLI
+## Helper 命令行
 
-Everything the app does can also be driven from the command line:
+App 里能做的一切都有对应 CLI：
 
 ```sh
 repokit-helper init <repo-id> [options]
@@ -140,29 +134,29 @@ repokit-helper import-all-installed <repo-id>
 repokit-helper help
 ```
 
-Run `repokit-helper help` on device for the full option list.
+设备上运行 `repokit-helper help` 可查看完整选项。
 
-## First-time Setup on Device
+## 设备首次配置
 
 ```sh
-# 1. Generate an SSH key (do this once)
+# 1. 生成 SSH 密钥（只需做一次）
 mkdir -p /var/mobile/.ssh
 ssh-keygen -t ed25519 -f /var/mobile/.ssh/id_ed25519 -C "you@example.com"
 
-# 2. Copy the public key to GitHub → Settings → SSH and GPG keys
+# 2. 把公钥加到 GitHub → Settings → SSH and GPG keys
 cat /var/mobile/.ssh/id_ed25519.pub
 
-# 3. Create a public repo on GitHub, then configure in RepoKit:
+# 3. 在 GitHub 创建公开仓库，RepoKit 里填写：
 #    Remote : git@github.com:you/my-repo.git
 #    Branch : main
-#    User   : your GitHub username
-#    Email  : your Git commit email
+#    User   : GitHub 用户名
+#    Email  : Git 提交邮箱
 ```
 
-## License
+## 许可证
 
-MIT — see [LICENSE](LICENSE).
+MIT — 见 [LICENSE](LICENSE)。
 
-## Author
+## 作者
 
 DaFei
